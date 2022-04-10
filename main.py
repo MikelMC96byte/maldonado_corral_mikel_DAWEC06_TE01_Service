@@ -4,7 +4,7 @@ from typing import List
 
 import databases
 import sqlalchemy
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 
@@ -119,7 +119,10 @@ async def shutdown():
 @app.get("/posts/", response_model=List[Post])
 async def get_posts():
     query = posts.select()
-    return await database.fetch_all(query)
+    result = await database.fetch_all(query)
+    if result == None:
+        raise HTTPException(status_code=404, detail="No posts found")
+    return result
 
 @app.post("/posts/", response_model=Post)
 async def create_post(post: PostIn):
@@ -137,7 +140,10 @@ async def create_post(post: PostIn):
 @app.get("/posts/{id}", response_model=Post)
 async def get_post(id: int):
     query = posts.select().where(posts.c.id == id)
-    return await database.fetch_one(query)
+    result = await database.fetch_one(query)
+    if result == None:
+        raise HTTPException(status_code=404, detail="Post not found")
+    return result
 
 @app.delete("/posts/{id}")
 async def delete_post(id: int):
@@ -167,7 +173,10 @@ async def dislike_a_post(id: int, user_id: int):
 @app.get("/users/", response_model=List[User])
 async def get_users():
     query = users.select()
-    return await database.fetch_all(query)
+    result = await database.fetch_all(query)
+    if result == None:
+        raise HTTPException(status_code=404, detail="No users found")
+    return result
 
 @app.post("/users/", response_model=User)
 async def create_users(user: UserIn):
@@ -181,8 +190,11 @@ async def create_users(user: UserIn):
 
 @app.get("/users/{id}", response_model=User)
 async def get_user(id: int):
-    query = users.select().where(users.id == id)
-    return await database.fetch_one(query)
+    query = users.select().where(users.c.id == id)
+    result = await database.fetch_one(query)
+    if result == None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return result
 
 @app.put("/users/{id}", response_model=User)
 async def update_user(id: int, user: UserIn):
@@ -208,5 +220,7 @@ async def delete_user(id: int):
 async def get_users_all_posts(id: int):
     query = posts.select()\
         .where(posts.c.user_id == id)
-    return await database.fetch_all(query)
-
+    result = await database.fetch_all(query)
+    if result == None:
+        raise HTTPException(status_code=404, detail="No posts found")
+    return result
