@@ -189,6 +189,12 @@ async def startup():
 async def shutdown():
     await database.disconnect()
 
+@app.get("/", tags=["Wellcome"])
+async def hello():
+    return {
+        "message": "Ohhh! Hello there! ;)"
+    }
+
 # Auth
 @app.post("/auth/register", tags=["Auth"])
 async def register(username: str, password: str):
