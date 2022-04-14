@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta
 from importlib.metadata import metadata
-from typing import List
+from typing import List, Optional
 
 import databases
 import sqlalchemy
@@ -71,6 +71,10 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     username: str
 
+class LoginJson(BaseModel):
+    username: str
+    password: str
+
 class UserIn(BaseModel):
     username: str
     name: str
@@ -102,15 +106,14 @@ class Post(BaseModel):
 
 class CommentIn(BaseModel):
     text: str
-    post_id: int
-    comment_id: int
+    comment_id: Optional[int]
 
 class Comment(BaseModel):
     id: int
     text: str
     user_id: int
     post_id: int
-    comment_id: int
+    comment_id: Optional[int]|None
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -162,7 +165,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("username")
+        username: str = payload.get("sub")
         if username is None:
             raise HTTPException(401, detail="User")
             #raise credentials_exception
@@ -223,19 +226,19 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    token = create_token(data={"username": user.username})
+    token = create_token(data={"sub": user.username})
     return {"access_token": token, "token_type": "bearer"}
 
 # Posts
-@app.get("/posts/", response_model=List[Post], tags=["Posts"])
+@app.get("/posts", response_model=List[Post], tags=["Posts"])
 async def read_posts(current_user: User = Depends(get_current_active_user)):
-    query = posts.select()
+    query = posts.select().order_by(posts.c.id.desc())
     result = await database.fetch_all(query)
     if result == None:
         raise HTTPException(status_code=404, detail="No posts found")
     return result
 
-@app.post("/posts/", response_model=Post, tags=["Posts"])
+@app.post("/posts", response_model=Post, tags=["Posts"])
 async def create_post(post: PostIn, current_user: User = Depends(get_current_active_user)):
     query = posts.insert().values(
         header=post.header, 
@@ -259,8 +262,36 @@ async def delete_post(id: int, current_user: User = Depends(get_current_active_u
     query = posts.delete().where(posts.c.id == id, posts.c.user_id == current_user.id)
     return await database.execute(query)
 
+# Comments
+@app.get("/posts/{post_id}/comments", response_model=List[Comment], tags=["Comments"])
+async def read_coments_in_post(post_id:int, current_user: User = Depends(get_current_active_user)):
+    query = comments.select()\
+        .where(comments.c.post_id == post_id)\
+        .order_by(comments.c.id)
+    return await database.fetch_all(query)
+
+@app.post("/posts/{id}/comments", response_model=Comment, tags=["Comments"])
+async def create_comment_in_post(id:int, comment: CommentIn, current_user: User = Depends(get_current_active_user)):
+    comment_id = None
+    if comment.comment_id:
+        comment_id = comment.comment_id
+    query = comments.insert().values(
+        text=comment.text,
+        user_id=current_user.id,
+        post_id=id,
+        comment_id=comment_id
+    )
+    id_return = await database.execute(query)
+    query = comments.select().where(comments.c.id == id_return)
+    return await database.fetch_one(query)
+
+@app.delete("/comments/{id}", response_model=None, tags=["Comments"])
+async def read_coments_in_post(id:int, current_user: User = Depends(get_current_active_user)):
+    query = comments.delete().where(comments.c.id == id, comments.c.id == current_user.id)
+    return await database.execute(query)
+
 # Users
-@app.get("/users/", tags=["Users"])
+@app.get("/users", response_model=List[UserInfo], tags=["Users"])
 async def read_users(current_user: User = Depends(get_current_active_user)):
     query = sqlalchemy.select(
             users.c.id, 
@@ -273,17 +304,28 @@ async def read_users(current_user: User = Depends(get_current_active_user)):
         raise HTTPException(status_code=404, detail="No users found")
     return result
 
-@app.get("/users/{id}", response_model=User, tags=["Users"])
+@app.get("/users/{id}", response_model=UserInfo, tags=["Users"])
 async def read_any_user(id: int, current_user: User = Depends(get_current_active_user)):
-    query = users.select().where(users.c.id == id)
+    query = sqlalchemy.select(
+            users.c.id, 
+            users.c.username, 
+            users.c.name, 
+            users.c.birthday
+        ).where(users.c.id == id)
     result = await database.fetch_one(query)
     if result == None:
         raise HTTPException(status_code=404, detail="User not found")
     return result
 
-@app.get("/me", response_model=User, tags=["Users"])
+@app.get("/me", response_model=UserInfo, tags=["Users"])
 async def read_my_user(current_user: User = Depends(get_current_active_user)):
-    return current_user
+    query = sqlalchemy.select(
+            users.c.id, 
+            users.c.username, 
+            users.c.name, 
+            users.c.birthday
+        ).where(users.c.id == current_user.id)
+    return await database.fetch_one(query)
 
 @app.put("/me", response_model=bool, tags=["Users"])
 async def update_my_user(name: str, birthday: date, current_user: User = Depends(get_current_active_user)):
@@ -308,11 +350,13 @@ async def delete_my_user(current_user: User = Depends(get_current_active_user)):
 @app.get("/users/{id}/posts", response_model=List[Post], tags=["Users & Posts"])
 async def get_users_all_posts(id: int, current_user: User = Depends(get_current_active_user)):
     query = posts.select()\
-        .where(posts.c.user_id == id)
+        .where(posts.c.user_id == id)\
+        .order_by(posts.c.id.desc())
     result = await database.fetch_all(query)
     if result == None:
         raise HTTPException(status_code=404, detail="No posts found")
     return result
+
 
 ##############
 def custom_openapi():
