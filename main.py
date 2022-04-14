@@ -263,10 +263,10 @@ async def delete_post(id: int, current_user: User = Depends(get_current_active_u
     return await database.execute(query)
 
 # Comments
-@app.get("/posts/{post_id}/comments", response_model=List[Comment], tags=["Comments"])
-async def read_coments_in_post(post_id:int, current_user: User = Depends(get_current_active_user)):
+@app.get("/posts/{id}/comments", response_model=List[Comment], tags=["Comments"])
+async def read_coments_in_post(id:int, current_user: User = Depends(get_current_active_user)):
     query = comments.select()\
-        .where(comments.c.post_id == post_id)\
+        .where(comments.c.post_id == id)\
         .order_by(comments.c.id)
     return await database.fetch_all(query)
 
