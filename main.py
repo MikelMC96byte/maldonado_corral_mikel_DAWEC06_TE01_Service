@@ -319,9 +319,9 @@ def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
     openapi_schema = get_openapi(
-        title="Blog API",
+        title="Birt Social Network API",
         version="3.1.0",
-        description="This is my blog service for the backend",
+        description="This is a backend Rest API service for an assingment made by <a href='https://github.com/MikelMC96byte' target='_blank'>Mikel Maldonado</a>",
         routes=app.routes,
     )
     openapi_schema["info"]["x-logo"] = {
