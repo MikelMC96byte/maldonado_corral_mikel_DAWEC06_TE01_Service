@@ -1,10 +1,6 @@
 from datetime import date, datetime, timedelta
-from email import header
-from email.policy import HTTP, default
 from importlib.metadata import metadata
-from lib2to3.pgen2 import token
-from tkinter.messagebox import NO
-from typing import List, Optional
+from typing import List
 
 import databases
 import sqlalchemy
