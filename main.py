@@ -10,12 +10,13 @@ from jose import JWTError, jwt
 from fastapi.openapi.utils import get_openapi
 from passlib.context import CryptContext
 from pydantic import BaseModel
+import os
 
 SECRET_KEY = "c4e82df7988bf8f3f06bba53dc8e8a5eb4684ee055603e01d685fb49feb28064"
 ALGORITHM = "HS256"
 EXPIRE_TIME = 90
 
-DATABASE_URL = "postgres://cducnogizlpzlu:6b2ec904c29a4ebfb1cd20ac753912b7b0008cc2285f48c9352aaf7068339d9f@ec2-99-80-170-190.eu-west-1.compute.amazonaws.com:5432/d6nggklh02cp6c"
+DATABASE_URL = os.environ['DATABASE_URL']
 
 database = databases.Database(DATABASE_URL)
 metadata = sqlalchemy.MetaData()
