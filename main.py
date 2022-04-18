@@ -231,8 +231,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     return {"access_token": token, "token_type": "bearer"}
 
 @app.post("/auth/jsonLogin", tags=["Auth"])
-async def login(username: str, password: str):
-    user = await authenticate_user(username=username, password=password)
+async def login(data: LoginJson):
+    user = await authenticate_user(username=data.username, password=data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
