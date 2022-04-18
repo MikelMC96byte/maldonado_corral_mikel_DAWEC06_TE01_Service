@@ -230,6 +230,18 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     token = create_token(data={"sub": user.username})
     return {"access_token": token, "token_type": "bearer"}
 
+@app.post("/auth/jsonLogin", tags=["Auth"])
+async def login(username: str, password: str):
+    user = await authenticate_user(username=username, password=password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    token = create_token(data={"sub": user.username})
+    return {"access_token": token, "token_type": "bearer"}
+
 # Posts
 @app.get("/posts", response_model=List[Post], tags=["Posts"])
 async def read_posts(current_user: User = Depends(get_current_active_user)):
