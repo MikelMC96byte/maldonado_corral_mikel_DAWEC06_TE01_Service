@@ -209,7 +209,7 @@ async def hello():
     }
 
 # Auth
-@app.post("/auth/register", tags=["Auth"])
+@app.post("/auth/register", response_model=UserInfo, tags=["Auth"])
 async def register(data: LoginJson):
     if data.username == "":
         raise HTTPException(status_code=400, detail="Username is empty")
