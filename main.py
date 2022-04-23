@@ -218,15 +218,19 @@ async def register(data: LoginJson):
         password = get_password_hash(data.password),
         disabled = 0
     )
-    id_return = await database.execute(query)
-    return {
-        "id": id_return, 
-        "username": data.username,
-        "name": "",
-        "birthday": date.min,
-        "disabled": 0
-    }
-
+    
+    try:
+        user = await get_user(data.username)
+    except HTTPException:
+        id_return = await database.execute(query)
+        return {
+            "id": id_return, 
+            "username": data.username,
+            "name": "",
+            "birthday": date.min,
+            "disabled": 0
+        }
+   
 @app.post("/auth/login", tags=["Auth"])
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = await authenticate_user(username=form_data.username, password=form_data.password)
