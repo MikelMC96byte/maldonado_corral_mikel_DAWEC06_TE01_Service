@@ -211,6 +211,11 @@ async def hello():
 # Auth
 @app.post("/auth/register", tags=["Auth"])
 async def register(data: LoginJson):
+    if data.username == "":
+        raise HTTPException(status_code=400, detail="Username is empty")
+    if data.password == "":
+        raise HTTPException(status_code=400, detail="Password is empty")
+    
     query = users.insert().values(
         username = data.username,
         name = "",
@@ -235,6 +240,11 @@ async def register(data: LoginJson):
    
 @app.post("/auth/login", tags=["Auth"])
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    if form_data.username == "":
+        raise HTTPException(status_code=400, detail="Username is empty")
+    if form_data.password == "":
+        raise HTTPException(status_code=400, detail="Password is empty")
+
     user = await authenticate_user(username=form_data.username, password=form_data.password)
     if not user:
         raise HTTPException(
@@ -247,6 +257,11 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
 @app.post("/auth/jsonLogin", tags=["Auth"])
 async def login(data: LoginJson):
+    if data.username == "":
+        raise HTTPException(status_code=400, detail="Username is empty")
+    if data.password == "":
+        raise HTTPException(status_code=400, detail="Password is empty")
+
     user = await authenticate_user(username=data.username, password=data.password)
     if not user:
         raise HTTPException(
