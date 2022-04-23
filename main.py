@@ -201,18 +201,18 @@ async def hello():
 
 # Auth
 @app.post("/auth/register", tags=["Auth"])
-async def register(username: str, password: str):
+async def register(data: LoginJson):
     query = users.insert().values(
-        username = username,
+        username = data.username,
         name = "",
         birthday = date.min,
-        password = get_password_hash(password),
+        password = get_password_hash(data.password),
         disabled = 0
     )
     id_return = await database.execute(query)
     return {
         "id": id_return, 
-        "username": username,
+        "username": data.username,
         "name": "",
         "birthday": date.min,
         "disabled": 0
