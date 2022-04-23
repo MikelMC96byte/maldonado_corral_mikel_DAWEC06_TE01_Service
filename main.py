@@ -238,7 +238,7 @@ async def register(data: LoginJson):
     else:
         raise HTTPException(status_code=400, detail="User already exists")
    
-@app.post("/auth/login", tags=["Auth"])
+@app.post("/auth/login", response_model=Token, tags=["Auth"])
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     if form_data.username == "":
         raise HTTPException(status_code=400, detail="Username is empty")
@@ -255,7 +255,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     token = create_token(data={"sub": user.username})
     return {"access_token": token, "token_type": "bearer"}
 
-@app.post("/auth/jsonLogin", tags=["Auth"])
+@app.post("/auth/jsonLogin", response_model=Token, tags=["Auth"])
 async def login(data: LoginJson):
     if data.username == "":
         raise HTTPException(status_code=400, detail="Username is empty")
