@@ -230,6 +230,8 @@ async def register(data: LoginJson):
             "birthday": date.min,
             "disabled": 0
         }
+    else:
+        raise HTTPException(status_code=400, detail="User already exists")
    
 @app.post("/auth/login", tags=["Auth"])
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
