@@ -252,6 +252,12 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if user.disabled == True:
+        raise HTTPException(
+            status_code=400,
+            detail="Disabled user",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     token = create_token(data={"sub": user.username})
     return {"access_token": token, "token_type": "bearer"}
 
@@ -267,6 +273,12 @@ async def login(data: LoginJson):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if user.disabled == True:
+        raise HTTPException(
+            status_code=400,
+            detail="Disabled user",
             headers={"WWW-Authenticate": "Bearer"},
         )
     token = create_token(data={"sub": user.username})
