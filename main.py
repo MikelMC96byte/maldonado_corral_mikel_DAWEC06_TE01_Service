@@ -401,10 +401,14 @@ async def get_users_all_posts(id: int, current_user: User = Depends(get_current_
     return result
 
 # Search
-@app.get("/search", response_model=List[User], tags=["Search"])
+@app.get("/search", response_model=List[UserInfo], tags=["Search"])
 async def search(q: str, current_user: User = Depends(get_current_active_user)):
-    query = users.select()\
-        .where(users.c.username.ilike(f"%{q}%"))\
+    query = sqlalchemy.select(
+            users.c.id, 
+            users.c.username, 
+            users.c.name, 
+            users.c.birthday
+        ).where(users.c.username.ilike(f"%{q}%"))\
         .order_by(users.c.username.asc())
     result = await database.fetch_all(query)
     if result == None:
