@@ -347,14 +347,14 @@ async def read_users(current_user: User = Depends(get_current_active_user)):
         raise HTTPException(status_code=404, detail="No users found")
     return result
 
-@app.get("/users/{id}", response_model=UserInfo, tags=["Users"])
-async def read_any_user(id: int, current_user: User = Depends(get_current_active_user)):
+@app.get("/users/{username}", response_model=UserInfo, tags=["Users"])
+async def read_any_user(username: str, current_user: User = Depends(get_current_active_user)):
     query = sqlalchemy.select(
             users.c.id, 
             users.c.username, 
             users.c.name, 
             users.c.birthday
-        ).where(users.c.id == id)\
+        ).where(users.c.username == username)\
         .where(users.c.disabled.is_not(True))
     result = await database.fetch_one(query)
     if result == None:
@@ -391,10 +391,10 @@ async def delete_my_user(current_user: User = Depends(get_current_active_user)):
     return await database.execute(query)
 
 # Users & Posts
-@app.get("/users/{id}/posts", response_model=List[Post], tags=["Users & Posts"])
-async def get_users_all_posts(id: int, current_user: User = Depends(get_current_active_user)):
+@app.get("/users/{username}/posts", response_model=List[Post], tags=["Users & Posts"])
+async def get_users_all_posts(username: str, current_user: User = Depends(get_current_active_user)):
     query = posts.select()\
-        .where(posts.c.user_id == id)\
+        .where(posts.c.username == username)\
         .order_by(posts.c.id.desc())
     result = await database.fetch_all(query)
     if result == None:
