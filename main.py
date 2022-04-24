@@ -341,7 +341,7 @@ async def read_users(current_user: User = Depends(get_current_active_user)):
             users.c.username, 
             users.c.name, 
             users.c.birthday
-        ).where(users.c.disabled.is_not(None))
+        ).where(users.c.disabled.is_not(True))
     result = await database.fetch_all(query)
     if result == None:
         raise HTTPException(status_code=404, detail="No users found")
@@ -409,6 +409,7 @@ async def search(q: str, current_user: User = Depends(get_current_active_user)):
             users.c.name, 
             users.c.birthday
         ).where(users.c.username.ilike(f"%{q}%"))\
+        .where(users.c.disabled.is_not(True))\
         .order_by(users.c.username.asc())
     result = await database.fetch_all(query)
     if result == None:
