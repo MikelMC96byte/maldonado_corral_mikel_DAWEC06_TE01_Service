@@ -404,6 +404,8 @@ async def get_users_all_posts(id: int, current_user: User = Depends(get_current_
 # Search
 @app.get("/search", response_model=List[UserInfo], tags=["Search"])
 async def search(q: str, current_user: User = Depends(get_current_active_user)):
+    if q == "":
+        return []
     query = sqlalchemy.select(
             users.c.id, 
             users.c.username, 
