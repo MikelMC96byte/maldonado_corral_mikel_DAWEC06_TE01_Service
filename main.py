@@ -400,6 +400,32 @@ async def get_users_all_posts(id: int, current_user: User = Depends(get_current_
         raise HTTPException(status_code=404, detail="No posts found")
     return result
 
+# Search
+@app.get("/search", response_model=List[Post|User], tags=["Search"])
+async def search(q: str, current_user: User = Depends(get_current_active_user)):
+    query = sqlalchemy.select(
+            posts.c.id, 
+            posts.c.text, 
+            posts.c.user_id, 
+            posts.c.created_at, 
+            posts.c.updated_at, 
+            users.c.id, 
+            users.c.username, 
+            users.c.name, 
+            users.c.birthday
+        ).select_from(
+            posts.join(users, posts.c.user_id == users.c.id)
+        ).where(
+            sqlalchemy.or_(
+                posts.c.text.contains(q),
+                users.c.name.contains(q)
+            )
+        )
+    result = await database.fetch_all(query)
+    if result == None:
+        raise HTTPException(status_code=404, detail="No results found")
+    return result
+
 
 ##############
 def custom_openapi():
