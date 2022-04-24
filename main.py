@@ -354,7 +354,8 @@ async def read_any_user(id: int, current_user: User = Depends(get_current_active
             users.c.username, 
             users.c.name, 
             users.c.birthday
-        ).where(users.c.id == id)
+        ).where(users.c.id == id)\
+        .where(users.c.disabled.is_not(True))
     result = await database.fetch_one(query)
     if result == None:
         raise HTTPException(status_code=404, detail="User not found")
