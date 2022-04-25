@@ -384,12 +384,12 @@ async def read_my_user(current_user: User = Depends(get_current_active_user)):
     return await database.fetch_one(query)
 
 @app.put("/me", response_model=bool, tags=["Users"])
-async def update_my_user(name: str, birthday: date, current_user: User = Depends(get_current_active_user)):
+async def update_my_user(user: UserIn, current_user: User = Depends(get_current_active_user)):
     query = users.update()\
         .where(users.c.id == current_user.id)\
         .values(
-            name = name,
-            birthday = birthday
+            name = user.name,
+            birthday = user.birthday
         )
     return await database.execute(query)
 
