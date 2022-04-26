@@ -327,6 +327,17 @@ async def read_post(id: int, current_user: User = Depends(get_current_active_use
         raise HTTPException(status_code=404, detail="Post not found")
     return result
 
+@app.put("/posts", response_model=Post, tags=["Posts"])
+async def update_post(post: Post, current_user: User = Depends(get_current_active_user)):
+    query = posts.update().where(posts.c.id == post.id).values(
+        header=post.header, 
+        body=post.body, 
+        user_id=current_user.id
+    )
+    await database.execute(query)
+    query = posts.select().where(posts.c.id == post.id)
+    return await database.fetch_one(query)
+
 @app.delete("/posts/{id}", response_model=bool, tags=["Posts"])
 async def delete_post(id: int, current_user: User = Depends(get_current_active_user)):
     query = posts.delete().where(posts.c.id == id, posts.c.user_id == current_user.id)
@@ -355,8 +366,37 @@ async def create_comment_in_post(id:int, comment: CommentIn, current_user: User 
     query = comments.select().where(comments.c.id == id_return)
     return await database.fetch_one(query)
 
+# Users & Posts
+@app.get("/posts/user/{username}", response_model=List[Post], tags=["Posts"])
+async def get_users_all_posts(username: str, current_user: User = Depends(get_current_active_user)):
+    query = posts.select()\
+        .where(posts.c.username == username)\
+        .order_by(posts.c.id.desc())
+    result = await database.fetch_all(query)
+    if result == None:
+        raise HTTPException(status_code=404, detail="No posts found")
+    return result
+
+@app.read("/comments/{id}", response_model=Comment, tags=["Comments"])
+async def read_comment(id:int, current_user: User = Depends(get_current_active_user)):
+    query = comments.select().where(comments.c.id == id)
+    result = await database.fetch_one(query)
+    if result == None:
+        raise HTTPException(status_code=404, detail="Comment not found")
+    return result
+
+@app.put("/comments", response_model=Comment, tags=["Comments"])
+async def update_comment(comment: Comment, current_user: User = Depends(get_current_active_user)):
+    query = comments.update().where(comments.c.id == comment.id).values(
+        text=comment.text,
+        user_id=current_user.id
+    )
+    await database.execute(query)
+    query = comments.select().where(comments.c.id == comment.id)
+    return await database.fetch_one(query)
+
 @app.delete("/comments/{id}", response_model=None, tags=["Comments"])
-async def read_coments_in_post(id:int, current_user: User = Depends(get_current_active_user)):
+async def delete_comment(id:int, current_user: User = Depends(get_current_active_user)):
     query = comments.delete().where(comments.c.id == id, comments.c.id == current_user.id)
     return await database.execute(query)
 
@@ -375,7 +415,7 @@ async def read_users(current_user: User = Depends(get_current_active_user)):
     return result
 
 @app.get("/users/{username}", response_model=UserInfo, tags=["Users"])
-async def read_any_user_by_username(username: str, current_user: User = Depends(get_current_active_user)):
+async def read_user_by_username(username: str, current_user: User = Depends(get_current_active_user)):
     query = sqlalchemy.select(
             users.c.id, 
             users.c.username, 
@@ -389,7 +429,7 @@ async def read_any_user_by_username(username: str, current_user: User = Depends(
     return result
 
 @app.get("/users/id/{id}", tags=["Users"])
-async def read_any_user_by_id(id: int, current_user: User = Depends(get_current_active_user)):
+async def read_user_by_id(id: int, current_user: User = Depends(get_current_active_user)):
     query = sqlalchemy.select(
             users.c.id, 
             users.c.username, 
@@ -402,17 +442,7 @@ async def read_any_user_by_id(id: int, current_user: User = Depends(get_current_
         raise HTTPException(status_code=404, detail="User not found")
     return result
 
-@app.get("/me", response_model=UserInfo, tags=["Users"])
-async def read_my_user(current_user: User = Depends(get_current_active_user)):
-    query = sqlalchemy.select(
-            users.c.id, 
-            users.c.username, 
-            users.c.name, 
-            users.c.birthday
-        ).where(users.c.id == current_user.id)
-    return await database.fetch_one(query)
-
-@app.put("/me", response_model=bool, tags=["Users"])
+@app.put("/users", response_model=bool, tags=["Users"])
 async def update_my_user(user: UserIn, current_user: User = Depends(get_current_active_user)):
     query = users.update()\
         .where(users.c.id == current_user.id)\
@@ -422,7 +452,7 @@ async def update_my_user(user: UserIn, current_user: User = Depends(get_current_
         )
     return await database.execute(query)
 
-@app.delete("/me", response_model=bool, tags=["Users"])
+@app.delete("/users", response_model=bool, tags=["Users"])
 async def delete_my_user(current_user: User = Depends(get_current_active_user)):
     query = users.update()\
         .where(users.c.id == current_user.id)\
@@ -430,17 +460,6 @@ async def delete_my_user(current_user: User = Depends(get_current_active_user)):
             disabled=True
         )
     return await database.execute(query)
-
-# Users & Posts
-@app.get("/users/{username}/posts", response_model=List[Post], tags=["Users & Posts"])
-async def get_users_all_posts(username: str, current_user: User = Depends(get_current_active_user)):
-    query = posts.select()\
-        .where(posts.c.username == username)\
-        .order_by(posts.c.id.desc())
-    result = await database.fetch_all(query)
-    if result == None:
-        raise HTTPException(status_code=404, detail="No posts found")
-    return result
 
 # Search
 @app.get("/search", response_model=List[UserInfo], tags=["Search"])
