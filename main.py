@@ -375,6 +375,9 @@ async def read_any_user_by_username(username: str, current_user: User = Depends(
 
 @app.get("/users/{id}", response_model=UserInfo, tags=["Users"])
 async def read_any_user_by_id(id: int, current_user: User = Depends(get_current_active_user)):
+    query = users.select().where(users.c.id == id)\
+        .where(users.c.disabled.is_not(True))
+    '''
     query = sqlalchemy.select(
             users.c.id, 
             users.c.username, 
@@ -382,10 +385,17 @@ async def read_any_user_by_id(id: int, current_user: User = Depends(get_current_
             users.c.birthday
         ).where(users.c.id == id)\
         .where(users.c.disabled.is_not(True))
+    '''
     result = await database.fetch_one(query)
     if result == None:
         raise HTTPException(status_code=404, detail="User not found")
-    return result
+    return {
+        "id": result.id,
+        "username": result.username,
+        "name": result.name,
+        "birthday": result.birthday
+    }
+    # return result
 
 @app.get("/me", response_model=UserInfo, tags=["Users"])
 async def read_my_user(current_user: User = Depends(get_current_active_user)):
