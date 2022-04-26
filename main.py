@@ -366,7 +366,6 @@ async def create_comment_in_post(id:int, comment: CommentIn, current_user: User 
     query = comments.select().where(comments.c.id == id_return)
     return await database.fetch_one(query)
 
-# Users & Posts
 @app.get("/posts/user/{username}", response_model=List[Post], tags=["Posts"])
 async def get_users_all_posts(username: str, current_user: User = Depends(get_current_active_user)):
     query = posts.select()\
@@ -377,7 +376,7 @@ async def get_users_all_posts(username: str, current_user: User = Depends(get_cu
         raise HTTPException(status_code=404, detail="No posts found")
     return result
 
-@app.read("/comments/{id}", response_model=Comment, tags=["Comments"])
+@app.get("/comments/{id}", response_model=Comment, tags=["Comments"])
 async def read_comment(id:int, current_user: User = Depends(get_current_active_user)):
     query = comments.select().where(comments.c.id == id)
     result = await database.fetch_one(query)
@@ -479,7 +478,6 @@ async def search(q: str, current_user: User = Depends(get_current_active_user)):
         raise HTTPException(status_code=404, detail="No results found")
     return result
 
-
 ##############
 def custom_openapi():
     if app.openapi_schema:
@@ -497,6 +495,7 @@ def custom_openapi():
     return app.openapi_schema
 
 app.openapi = custom_openapi
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
