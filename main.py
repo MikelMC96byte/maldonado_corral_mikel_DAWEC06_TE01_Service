@@ -12,6 +12,7 @@ from fastapi.openapi.utils import get_openapi
 from passlib.context import CryptContext
 from pydantic import BaseModel
 import os
+import uvicorn
 
 SECRET_KEY = "c4e82df7988bf8f3f06bba53dc8e8a5eb4684ee055603e01d685fb49feb28064"
 ALGORITHM = "HS256"
@@ -139,6 +140,20 @@ def get_password_hash(password):
 
 async def get_user(username: str):
     query = users.select().where(users.c.username == username)
+    user = await database.fetch_one(query)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return User(
+        id=user.id,
+        username=user.username,
+        password=user.password,
+        name=user.name,
+        birthday=user.birthday,
+        disabled=user.disabled
+    )
+
+async def get_user_by_id(user_id: int):
+    query = users.select().where(users.c.id == user_id)
     user = await database.fetch_one(query)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -373,11 +388,8 @@ async def read_any_user_by_username(username: str, current_user: User = Depends(
         raise HTTPException(status_code=404, detail="User not found")
     return result
 
-@app.get("/users/{id}", response_model=UserInfo, tags=["Users"])
+@app.get("/users/id/{id}", tags=["Users"])
 async def read_any_user_by_id(id: int, current_user: User = Depends(get_current_active_user)):
-    query = users.select().where(users.c.id == id)\
-        .where(users.c.disabled.is_not(True))
-    '''
     query = sqlalchemy.select(
             users.c.id, 
             users.c.username, 
@@ -385,17 +397,10 @@ async def read_any_user_by_id(id: int, current_user: User = Depends(get_current_
             users.c.birthday
         ).where(users.c.id == id)\
         .where(users.c.disabled.is_not(True))
-    '''
     result = await database.fetch_one(query)
     if result == None:
         raise HTTPException(status_code=404, detail="User not found")
-    return {
-        "id": result.id,
-        "username": result.username,
-        "name": result.name,
-        "birthday": result.birthday
-    }
-    # return result
+    return result
 
 @app.get("/me", response_model=UserInfo, tags=["Users"])
 async def read_my_user(current_user: User = Depends(get_current_active_user)):
@@ -473,3 +478,6 @@ def custom_openapi():
     return app.openapi_schema
 
 app.openapi = custom_openapi
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
