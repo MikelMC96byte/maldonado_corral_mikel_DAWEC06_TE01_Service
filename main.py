@@ -368,8 +368,12 @@ async def create_comment_in_post(id:int, comment: CommentIn, current_user: User 
 
 @app.get("/posts/user/{username}", response_model=List[Post], tags=["Posts"])
 async def get_users_all_posts(username: str, current_user: User = Depends(get_current_active_user)):
+    query = users.select().where(users.c.username == username)
+    result = await database.fetch_one(query)
+    if result == None:
+        raise HTTPException(status_code=404, detail="User not found")
     query = posts.select()\
-        .where(posts.c.username == username)\
+        .where(posts.c.user_id == result.id)\
         .order_by(posts.c.id.desc())
     result = await database.fetch_all(query)
     if result == None:
