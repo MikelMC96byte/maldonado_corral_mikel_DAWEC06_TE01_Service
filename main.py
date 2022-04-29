@@ -400,7 +400,7 @@ async def update_comment(comment: Comment, current_user: User = Depends(get_curr
 
 @app.delete("/comments/{id}", response_model=None, tags=["Comments"])
 async def delete_comment(id:int, current_user: User = Depends(get_current_active_user)):
-    query = comments.delete().where(comments.c.id == id, comments.c.id == current_user.id)
+    query = comments.delete().where(comments.c.id == id).where(comments.c.user_id == current_user.id)
     return await database.execute(query)
 
 # Users
